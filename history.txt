@@ -1,0 +1,36 @@
+21:20hs administoocommon
+viendo que estaba importado el archivo transport ya me indico que lo deberia usar para conseguir las imagenes en raw, por cada rawimg use la funcion que estaba en translator que convertia la request(que no se en que formato viene) a card (aparentemente mas util y con atributos mas faciles de manejar y los agregue a un listado)
+para la funcion de filtrar la carta segun el nombre del bicho llame a la funcion que hice que crea las cartas noraws, y basicamente compare si el nombre ingresado po el usuario era igual a algun nombre de la lista con todas las cartas noraws y que devuelva una lista con las cartas filtered 
+para la funcion de filtrar cartas por tipo para carta en cartas reviso si el type filter esta en el type de card y si lo esta lo agrego a la lista filtrada
+para la función de savefavourite extraje en formato de card la request con la función de translator, y asigne los valores de la card + el user actual a la tabla correspondiente en la DB manejada con DJANGO
+para getAllFavourites solo te fijas el usuario actual con get_user de la request y mientras este autenticado consigues la lista de favoritos con get_all_favourites. recorremos la lista ósea todas las cartas favoritas pasandolas a formato card y las vamos agregando a mapped_favourite
+para borrar favoritos sacamos la id del favorito que se quiere borrar del la request, y si el usuario esta autenticado, tratamos de borrar el idpokemon del current user en cuestión 
+
+views
+para el home se extraen las imágenes con la función de services, getAllImages, de igual forma las listas favoritas, y si no están vacias y el usuarioesta logeado se muestran por pantalla
+para el search hice que se busque en getallimages por el parámetro name, a su vez cargué los favoritos para hacer la evaluación, supuestamente debo hacerla directamente en el template HTML asi que eso hice, para los favoritos en lugar de comparar uno por uno todas las cartas comparo IDs que se encuentran dentro de un set creado por mi,  favourite_ids = {card.id for card in favourite_list} #la id en card.id marca en blanco, supongo que es porque no hay pokemons favoritos dentro de la lita aun pero si luego explota ya se que es
+para el filter llamo a la funcion de services que fultra segun el type de la request, pongo en render los favoritosn images e ids y ya
+para getAllFavouritesByUser lo mismo, solo pongo en render los datos necesarios para el html
+para saveFavourite cuando se envia el cuestioanrio(POST) por apretar click en guardar como favorito, se modifica la base de datos, y si el proceso fue efectivo entonces no sucede nada, si no es efectivo se notifica y en cambos casos se retorna a la url de la que viene. Gracias a un atributo de la solucitud request que agregue para que efectivamente, tenga un atributo url y el redirect sea correcto. Esto sucede porque en los request del tipo POST, en la mayoría de webs, espera una respuesta de vuelta del tipo, al no tenerla mostraria una pantalla de error, con este método hago que no espere esa respuesta de vuelta y que en su lugar se mantenga en la misma url
+para exit en teoria ya funciona, no se si mas tarde tendre que modificarle algo
+
+
+
+
+
+
+
+
+
+##Ciclo de la request https
+Cuando accedés a una URL específica (como /mis-favoritos/), tu navegador envía esa petición al servidor.
+El programa que está corriendo la web (Django, en tu caso) está configurado (en urls.py) para que, al acceder a esa URL en particular, se ejecute automáticamente una función de Python (tu vista en views.py, como getAllFavouritesByUser).
+Cuando esa función de Python corre, su trabajo es obtener y preparar los datos dinámicos que se necesitan para esa página (por ejemplo, la id del Pokémon, la imagen, el nombre, altura, peso, etc., todo lo que tu función de servicio getAllFavourites devuelve).
+Estos datos se organizan en un diccionario de contexto en Python y se le pasan a la función render().
+Entonces, el motor de plantillas de Django toma el archivo HTML (favourites.html en este caso) y lo recorre. A medida que lo recorre, busca las variables y etiquetas especiales ({{ algo }} o {% for algo %}).
+Mientras lo recorre, autocompleta esos "espacios en blanco" en el HTML con los datos que ya están cargados en el diccionario de contexto que le pasó la vista.
+El resultado es un HTML final y completo que es enviado a tu navegador para que lo muestre.
+
+
+pregunta para clase, es correcto hacer los get post desde view, ahi extraer los datos en un diccioanrio como pokemon_data y current_user con (request.user). Y desde ahi ir pasando los datos a services y damas? esto con el objetivo de que en cada instacia como pudiese ser una funcion de services no se tuviera que carga la card en una variable con un request ni el current user con otro request.user
+creo que es una mala practica pero para hacerlo bien deberia modifcar los archivos de translator y zz, me parece que no es correcto ahcer que views tome la request y que la envie a services asi como viene, tengo entendido que a services le deben llegar los datos extraidos, pero extraerlos en view y mandarls implica modificar la logica entera del proceso

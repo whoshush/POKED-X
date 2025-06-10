@@ -1,0 +1,12 @@
+¡Hola {{ username }}!
+
+¡Bienvenido a POKEDEX! Tu cuenta ha sido creada exitosamente.
+
+Aquí están tus credenciales de acceso:
+Usuario: {{ username }}
+Contraseña: {{ password }}
+
+Puedes iniciar sesión aquí: {{ login_url }}
+
+¡Gracias por unirte!
+El equipo de POKEDEX.

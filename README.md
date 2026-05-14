@@ -1,4 +1,4 @@
-""# 🔴 Pokedex - Django Multilayer Application
+## 🔴 Pokedex - Django Multilayer Application
 
 Un proyecto web Full-Stack desarrollado en **Python/Django** que permite buscar, filtrar y guardar Pokémon favoritos consumiendo una API externa.
 

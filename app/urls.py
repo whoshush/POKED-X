@@ -14,9 +14,10 @@ urlpatterns = [
     path('buscar/', views.search, name='buscar'),
     path('filter_by_type/', views.filter_by_type, name='filter_by_type'),
 
-    path('favourites/', views.getAllFavouritesByUser, name='favoritos'),
-    path('favourites/add/', views.saveFavourite, name='agregar-favorito'),
-    path('favourites/delete/', views.deleteFavourite, name='borrar-favorito'),
+    # Estas son las tres vistas que actualizamos al estándar snake_case
+    path('favourites/', views.get_all_favourites_by_user, name='favoritos'),
+    path('favourites/add/', views.save_favourite, name='agregar-favorito'),
+    path('favourites/delete/', views.delete_favourite, name='borrar-favorito'),
 
     path('exit/', views.exit, name='exit'),
     

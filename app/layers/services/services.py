@@ -1,96 +1,98 @@
-# capa de servicio/lógica de negocio
+from typing import List, Optional
+from django.http import HttpRequest
+from django.contrib.auth import get_user
 from app.models import Favourite
 from ..transport import transport
 from ...config import config
 from ..persistence import repositories
 from ..utilities import translator
-from django.contrib.auth import get_user
 
+def get_all_images() -> list:
+    """
+    Obtiene un listado de imágenes crudas desde la API y las transforma en objetos Card.
+    """
+    raw_images = transport.getAllImages()
+    return [translator.fromRequestIntoCard(raw_image) for raw_image in raw_images]
 
-# función que devuelve un listado de cards. Cada card representa una imagen de la API de Pokemon
-def getAllImages() :
-    # debe ejecutar los siguientes pasos:
-    raw_images = transport.getAllImages() #1) traer un listado de imágenes crudas desde la API (ver transport.py)
-    cards = []# 2) convertir cada img. en una card.
-    for raw_image in raw_images :
-        card = translator.fromRequestIntoCard(raw_image)
-        cards.append(card)# 3) añadirlas a un nuevo listado que, finalmente, se retornará con todas las card encontradas.
-    return cards # 4) retornar el listado de cards
+def filter_by_character(name: str) -> list:
+    """
+    Filtra el listado de cards buscando una coincidencia exacta por nombre.
+    TODO: Implementar búsqueda difusa para sugerir resultados ("quizás quisiste decir...").
+    """
+    name_lower = name.lower()
+    return [card for card in get_all_images() if card.name.lower() == name_lower]
 
+def filter_by_type(type_filter: str) -> list:
+    """
+    Filtra las cards asegurando que el tipo buscado se encuentre entre los tipos del Pokémon.
+    """
+    type_filter_lower = type_filter.lower()
+    return [card for card in get_all_images() if type_filter_lower in (t.lower() for t in card.types)]
 
-# función que filtra según el nombre del pokemon.
-def filterByCharacter(name) :
-    filtered_cards = []
-    cards = getAllImages()
-    for card in cards :
-        if name.lower() == card.name.lower() :
-            filtered_cards.append(card)
-    return filtered_cards
-##aca later estaria bueno implementar el tipico de "quizas quisiste decir" y mostrar un listado de cards que coincidan parcialmente con el nombre buscado.
-
-# función que filtra las cards según su tipo.
-def filterByType(type_filter):
-    type_filter = type_filter.lower()
-    filtered_cards = []
-    cards = getAllImages()
-    for card in cards :
-        if type_filter in [t.lower() for t in card.types] :
-            filtered_cards.append(card)
-    return filtered_cards
-
-# añadir favoritos (usado desde el template 'home.html')
-def saveFavourite(request) :
-    card = translator.fromTemplateIntoCard(request) # transformamos el request en una Card (ver translator.py)
+def save_favourite(request: HttpRequest) -> bool:
+    """
+    Transforma el request en una Card y persiste el favorito en la base de datos
+    para el usuario autenticado.
+    """
     current_user = get_user(request)
-    if not current_user.is_authenticated :
+    
+    if not current_user.is_authenticated:
+        # Nota: En producción, es mejor usar el módulo 'logging' en lugar de prints
         print("Error: Intento de guardar favorito por usuario no autenticado.")
         return False
-    # Creo una instancia del modelo 'Favourite' de la base de datos,
-    # asignando el usuario actual y los detalles del Pokémon de la 'card'.
+        
+    card = translator.fromTemplateIntoCard(request)
+    
     favourite_entry_db = Favourite(
-        user = current_user,  # Usuario autenticado
-        name = card.name,  # Nombre del Pokémon
-        id = card.id,  # ID del Pokémon
-        height = card.height,  # Altura del Pokémon
-        weight = card.weight,  # Peso del Pokémon
-        base_experience = card.base,  # Experiencia base del Pokémon
-        types = card.types,  # Tipos del Pokémon
-        image = card.image  # Imagen del Pokémon
+        user=current_user,
+        name=card.name,
+        id=card.id,
+        height=card.height,
+        weight=card.weight,
+        base_experience=card.base,
+        types=card.types,
+        image=card.image
     )
-    return repositories.save_favourite(favourite_entry_db) # lo mando para repositories en forma de instacia(es un elemento espeficio de django para manejar grupos de datos)(lo qu espera repositories) para que se guarde en la BD.
     
+    return repositories.save_favourite(favourite_entry_db)
 
-# usados desde el template 'favourites.html'
-def getAllFavourites(request):
+def get_all_favourites(request: HttpRequest) -> list:
+    """
+    Retorna una lista de Cards con todos los favoritos del usuario actual.
+    """
     current_user = get_user(request)
-    if not current_user.is_authenticated :
-        print("El usuario no esta autenticado.")
-        return None
-
-    favourite_list = repositories.get_all_favourites(current_user) # buscamos desde el repositories.py TODOS Los favoritos del usuario (variable 'user').
-    mapped_favourites = []
-
-    for favourite in favourite_list :
-            card = translator.fromRepositoryIntoCard(favourite) # convertimos cada favorito en una Card, y lo almacenamos en el listado de mapped_favourites que luego se retorna.
-            mapped_favourites.append(card)
-    return mapped_favourites
-
-def deleteFavourite(request) :
-    favId = request.POST.get('id')
-    current_user = get_user(request)
+    
     if not current_user.is_authenticated:
-        print("El usuario no esta autenticado.")
-        return False
+        print("Error: El usuario no está autenticado.")
+        return []
+
+    favourite_list = repositories.get_all_favourites(current_user)
+    return [translator.fromRepositoryIntoCard(favourite) for favourite in favourite_list]
+
+def delete_favourite(request: HttpRequest) -> bool:
+    """
+    Elimina un favorito específico del usuario autenticado a través de su ID.
+    """
+    fav_id = request.POST.get('id')
+    current_user = get_user(request)
     
-    deleted_successfully = repositories.delete_favourite(favId, current_user) # borramos un favorito por su ID
-    if deleted_successfully :
-        print(f"Favorito con ID {favId} eliminado correctamente.")
+    if not current_user.is_authenticated:
+        print("Error: El usuario no está autenticado.")
+        return False
+        
+    deleted_successfully = repositories.delete_favourite(fav_id, current_user)
+    
+    if deleted_successfully:
+        print(f"Favorito con ID {fav_id} eliminado correctamente.")
     else:
-        print(f"Error al eliminar el favorito con ID {favId}. Puede que no exista o no pertenezca al usuario.")
+        print(f"Error al eliminar el favorito con ID {fav_id}. Puede que no exista o no pertenezca al usuario.")
+        
     return deleted_successfully
 
-#obtenemos de TYPE_ID_MAP el id correspondiente a un tipo segun su nombre
-def get_type_icon_url_by_name(type_name):
+def get_type_icon_url_by_name(type_name: str) -> Optional[str]:
+    """
+    Obtiene la URL del ícono correspondiente a un tipo de Pokémon según su nombre.
+    """
     type_id = config.TYPE_ID_MAP.get(type_name.lower())
     if not type_id:
         return None

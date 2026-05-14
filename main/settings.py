@@ -130,7 +130,7 @@ LOGOUT_REDIRECT_URL = 'index-page'
 #EMAIL_USE_TLS = True
 #EMAIL_PORT = 587
 #EMAIL_HOST_USER = 'juan333tresjuan333tres@gmail.com'  # Reemplaza con tu correo electrónico
-#EMAIL_HOST_PASSWORD = 'your app password'
+#EMAIL_HOST_PASSWORD = 'CONTRASEÑA_OCULTA_PARA_GITHUB'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 AUTHENTICATION_BACKENDS = [
